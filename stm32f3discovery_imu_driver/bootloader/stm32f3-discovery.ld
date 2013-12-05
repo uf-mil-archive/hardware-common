@@ -4,10 +4,13 @@
 /* Define memory regions. */
 MEMORY
 {
-        boot_rom (rx) : ORIGIN = 0x08000000, LENGTH = 64K
-        rom (rx) : ORIGIN = 0x8010000, LENGTH = 192K
+        rom (rx) : ORIGIN = 0x08000000, LENGTH = 64K
+        client_rom (rx) : ORIGIN = 0x8010000, LENGTH = 192K
 	ram (rwx) : ORIGIN = 0x20000000, LENGTH = 40K
 }
+
+PROVIDE(_begin_client_rom = ORIGIN(client_rom));
+PROVIDE(_end_client_rom = ORIGIN(client_rom) + LENGTH(client_rom));
 
 /* Include the common ld script. */
 INCLUDE libopencm3_stm32f3.ld

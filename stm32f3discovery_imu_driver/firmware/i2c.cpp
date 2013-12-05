@@ -9,7 +9,6 @@
 using namespace stm32f3discovery_imu_driver;
 
 static uint8_t const I2C_ACC_ADDR = 0x19;
-static uint8_t const I2C_MAG_ADDR = 0x1E;
 static uint8_t const ACC_STATUS = 0x27;
 static uint8_t const ACC_CTRL_REG1_A = 0x20;
 static uint8_t const ACC_CTRL_REG1_A_ODR_SHIFT = 4;
@@ -18,6 +17,13 @@ static uint8_t const ACC_CTRL_REG1_A_XEN = 1 << 0;
 static uint8_t const ACC_CTRL_REG4_A = 0x23;
 static uint8_t const ACC_OUT_X_L_A = 0x28;
 static uint8_t const ACC_OUT_X_H_A = 0x29;
+
+
+static uint8_t const I2C_MAG_ADDR = 0x1E;
+static uint8_t const CRA_REG_M = 0x00;
+static uint8_t const CRB_REG_M = 0x01;
+static uint8_t const MR_REG_M = 0x02;
+static uint8_t const OUT_X_H_M = 0x03;
 
 void i2c_setup(void) {
   rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_I2C1EN);
@@ -45,6 +51,13 @@ void i2c_setup(void) {
   write_i2c(I2C1, I2C_ACC_ADDR, ACC_CTRL_REG1_A, 1, data);
   data[0]=0x08;
   write_i2c(I2C1, I2C_ACC_ADDR, ACC_CTRL_REG4_A, 1, data);
+  
+  { uint8_t d[] = {0b10011100};
+    write_i2c(I2C1, I2C_MAG_ADDR, CRA_REG_M, sizeof(d), d); }
+  { uint8_t d[] = {0b11100000};
+    write_i2c(I2C1, I2C_MAG_ADDR, CRB_REG_M, sizeof(d), d); }
+  { uint8_t d[] = {0b00000000};
+    write_i2c(I2C1, I2C_MAG_ADDR, MR_REG_M, sizeof(d), d); }
 }
 
 void i2c_read_imu(GetIMUDataResponse &resp) {
@@ -54,5 +67,19 @@ void i2c_read_imu(GetIMUDataResponse &resp) {
 
   for(int axis = 0; axis < 3; axis++) {
     resp.linear_acceleration[axis] = g0/1000/16 * static_cast<int16_t>((data[2*axis+1] << 8) | data[2*axis+0]);
+  }
+  
+  {
+    uint8_t data[6]; read_i2c(I2C1, I2C_MAG_ADDR, OUT_X_H_M|0x80, sizeof(data), data);
+
+    for(int axis = 0; axis < 3; axis++) {
+      double gain = 230;
+      if(axis == 2) gain = 205;
+      int offset;
+      if(axis == 0) offset = 0; // X
+      else if(axis == 1) offset = 2; // Y
+      else offset = 1; //Z
+      resp.magnetic_field[axis] = 1e-4 / gain * static_cast<int16_t>((data[2*offset+0] << 8) | data[2*offset+1]);
+    }
   }
 }

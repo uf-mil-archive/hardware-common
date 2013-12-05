@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import subprocess
+import os
+import hashlib
+import struct
+
+output_filename = os.tempnam()
+
+subprocess.check_call(['st-flash', 'read', output_filename, '1FFFF7AC', 'C'])
+
+with open(output_filename, 'rb') as f:
+    data = f.read()
+
+os.unlink(output_filename)
+
+print data.encode('hex')
+print
+print 'Device id is:'
+print hex(struct.unpack('<I', hashlib.sha256(data).digest()[:4])[0])

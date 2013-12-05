@@ -17,7 +17,7 @@
 ## along with this library.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-BINARY = firmware
+BINARY = bootloader
 
 LDSCRIPT = stm32f3-discovery.ld
 
@@ -37,11 +37,12 @@ CFLAGS		+= -Os -g -Wall -Wextra -I$(TOOLCHAIN_DIR)/include \
 		   -fno-common -mcpu=cortex-m4 -mthumb \
 		   -mfloat-abi=hard -mfpu=fpv4-sp-d16 -MD -DSTM32F3 \
 		   -Wsign-conversion -Wsign-compare \
-                   -I$(UF_SUBBUS_PROTOCOL_DIR)/include \
-                   -I../include
+		   -I$(UF_SUBBUS_PROTOCOL_DIR)/include \
+		   -I$(ARM_BOOTLOADER_DIR)/include \
+		   -I../include
 CXXFLAGS	+= $(CFLAGS) -std=c++11
 LDSCRIPT	?= $(BINARY).ld
-LDFLAGS		+= --static -Wl,-start-group -lc -lnosys -L$(TOOLCHAIN_DIR)/lib \
+LDFLAGS		+= --static -Wl,-start -lc -lnosys -L$(TOOLCHAIN_DIR)/lib \
 			 -L$(TOOLCHAIN_DIR)/lib/stm32/f3 \
 		   -T$(LDSCRIPT) -nostartfiles -Wl,--gc-sections \
 		   -mthumb -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -59,8 +60,6 @@ V=1
 ifneq ($(V),1)
 Q := @
 NULL := 2>/dev/null
-else
-LDFLAGS += -Wl,--print-gc-sections
 endif
 
 .SUFFIXES: .elf .bin .hex .srec .list .images

@@ -38,6 +38,7 @@ CFLAGS		+= -Os -g -Wall -Wextra -I$(TOOLCHAIN_DIR)/include \
 		   -mfloat-abi=hard -mfpu=fpv4-sp-d16 -MD -DSTM32F3 \
 		   -Wsign-conversion -Wsign-compare \
 		   -I$(UF_SUBBUS_PROTOCOL_DIR)/include \
+		   -I$(ARM_BOOTLOADER_DIR)/include \
 		   -I../include
 CXXFLAGS	+= $(CFLAGS) -std=c++11
 LDSCRIPT	?= $(BINARY).ld
@@ -59,8 +60,6 @@ V=1
 ifneq ($(V),1)
 Q := @
 NULL := 2>/dev/null
-else
-LDFLAGS += -Wl,--print-gc-sections
 endif
 
 .SUFFIXES: .elf .bin .hex .srec .list .images

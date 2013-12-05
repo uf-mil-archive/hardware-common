@@ -8,6 +8,7 @@
 #include <libopencm3/stm32/gpio.h>
 
 #include <uf_subbus_protocol/protocol.h>
+#include <arm_bootloader/uniqueid.h>
 
 #include <stm32f3discovery_imu_driver/protocol.h>
 
@@ -28,8 +29,10 @@ public:
 
 uf_subbus_protocol::ChecksumAdder<uf_subbus_protocol::Packetizer<UARTSink> > *p_checksumadder;
 
+arm_bootloader::Dest dest = arm_bootloader::get_unique_dest();
+
 void messageReceived(const Command &msg) {
-  if(msg.dest != 0x1234) return;
+  if(msg.dest != dest) return;
   
   Response resp; memset(&resp, 0, sizeof(resp));
   resp.id = msg.id;

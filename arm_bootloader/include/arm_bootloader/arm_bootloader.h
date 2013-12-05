@@ -89,12 +89,11 @@ public:
   
   boost::optional<Response> read(ID id) {
     boost::function<void(const Response &)> tmp = boost::bind(&Reader::handleResult, this, _1, id);
-    uf_subbus_protocol::ObjectReceiver<Response, boost::function<void(const Response &)> >
-      objectreceiver(tmp);
-    uf_subbus_protocol::ChecksumChecker<uf_subbus_protocol::ObjectReceiver<Response, boost::function<void(const Response &)> > >
-      cc(objectreceiver);
-    uf_subbus_protocol::Depacketizer<uf_subbus_protocol::ChecksumChecker<uf_subbus_protocol::ObjectReceiver<Response, boost::function<void(const Response &)> > > >
-      depacketizer(cc);
+    
+    typedef uf_subbus_protocol::SimpleReceiver
+      <Response, boost::function<void(const Response &)> > Receiver;
+    
+    Receiver receiver(tmp);
     
     result = boost::none;
     
@@ -102,7 +101,7 @@ public:
     // to do a reset for subsequent reads to work.
     sp.get_io_service().reset();
 
-    boost::function<void(uint8_t)> tmp2 = boost::bind(&uf_subbus_protocol::Depacketizer<uf_subbus_protocol::ChecksumChecker<uf_subbus_protocol::ObjectReceiver<Response, boost::function<void(const Response &)> > > >::handleRawByte, &depacketizer, _1);
+    boost::function<void(uint8_t)> tmp2 = boost::bind(&Receiver::handleRawByte, receiver, _1);
     // Asynchronously read 1 character.
     boost::asio::async_read(sp, boost::asio::buffer(&buf, 1),
             boost::bind(&Reader::read_complete,
@@ -126,8 +125,9 @@ public:
 
 
 bool attempt_bootload(boost::asio::serial_port &sp,
+                      Dest dest,
                       unsigned char const *firmware_bin,
-                      unsigned int firmware_bin_len) {
+                      uint32_t firmware_bin_len) {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis(1, 65535);
@@ -135,33 +135,30 @@ bool attempt_bootload(boost::asio::serial_port &sp,
   Reader<Response> reader(sp, 1000);
   
   SerialPortSink sps(sp);
-  uf_subbus_protocol::Packetizer<SerialPortSink>
-    packetizer(sps);
-  uf_subbus_protocol::ChecksumAdder<uf_subbus_protocol::Packetizer<SerialPortSink> >
-    checksumadder(packetizer);
+  uf_subbus_protocol::SimpleSender<Command, uf_subbus_protocol::ISink> sender(sps);
   
 unsure_if_talking_to_bootloader:
   {
     Command cmd; memset(&cmd, 0, sizeof(cmd));
-    cmd.dest = 0x1234;
+    cmd.dest = dest;
     cmd.id = dis(gen);
     cmd.command = CommandID::GetStatus;
-    write_object(cmd, checksumadder);
+    sender.write_object(cmd);
     
     boost::optional<Response> resp = reader.read(cmd.id);
-    if(resp && resp->resp.GetStatus.bootloader_magic == GetStatusResponse::BOOTLOADER_MAGIC_VALUE) {
+    if(resp && resp->resp.GetStatus.magic == GetStatusResponse::MAGIC_VALUE) {
       std::cout << "talking to bootloader!" << std::endl;
     } else {
       if(!resp) {
         std::cout << "timeout while querying bootloader!" << std::endl;
       } else {
-        std::cout << "not talking to bootloader!" << std::endl;
+        std::cout << "not talking to bootloader! " << resp->resp.GetStatus.magic << std::endl;
       }
       Command cmd; memset(&cmd, 0, sizeof(cmd));
-      cmd.dest = 0x1234;
+      cmd.dest = dest;
       cmd.id = dis(gen);
       cmd.command = CommandID::Reset;
-      write_object(cmd, checksumadder);
+      sender.write_object(cmd);
       
       usleep(300000);
       
@@ -173,11 +170,11 @@ unsure_if_program_correct:
   bool hash_matched;
   {
     Command cmd; memset(&cmd, 0, sizeof(cmd));
-    cmd.dest = 0x1234;
+    cmd.dest = dest;
     cmd.id = dis(gen);
     cmd.command = CommandID::GetProgramHash;
     cmd.args.GetProgramHash.length = firmware_bin_len;
-    write_object(cmd, checksumadder);
+    sender.write_object(cmd);
     
     boost::optional<Response> resp = reader.read(cmd.id);
     if(!resp) {
@@ -187,7 +184,7 @@ unsure_if_program_correct:
     if(!resp->resp.GetProgramHash.error_number) {
       std::cout << "hash operation succeeded!" << std::endl;
     } else {
-      std::cout << "hash operation failed! (error_number =" << resp->resp.GetProgramHash.error_number << ")" << std::endl;
+      std::cout << "hash operation failed! (error_number = " << (int)resp->resp.GetProgramHash.error_number << ")" << std::endl;
       return false;
     }
     
@@ -207,25 +204,50 @@ unsure_if_program_correct:
   if(!hash_matched) {
     std::cout << "hash doesn't match!" << std::endl;
     
-    for(uint32_t page_number = 0; 2048*page_number < firmware_bin_len; page_number++) {
-      std::cout << "Flashing page " << page_number << "..." << std::endl;
+    {
+      std::cout << "Erasing..." << std::endl;
       
       Command cmd; memset(&cmd, 0, sizeof(cmd));
-      cmd.dest = 0x1234;
+      cmd.dest = dest;
       cmd.id = dis(gen);
-      cmd.command = CommandID::FlashPage;
-      cmd.args.FlashPage.page_number = page_number;
-      memcpy(cmd.args.FlashPage.page_contents, firmware_bin + 2048*page_number,
-        std::min(firmware_bin_len - 2048*page_number, 2048u));
-      write_object(cmd, checksumadder);
+      cmd.command = CommandID::Erase;
+      cmd.args.Erase.min_length = firmware_bin_len;
+      sender.write_object(cmd);
       
       boost::optional<Response> resp = reader.read(cmd.id);
       if(!resp) {
         std::cout << "flashing page timed out!" << std::endl;
         goto unsure_if_talking_to_bootloader;
       }
-      if(resp->resp.FlashPage.error_number) {
-        std::cout << "    ...failed! (error_number = " << resp->resp.FlashPage.error_number << ")" << std::endl;
+      if(resp->resp.Flash.error_number) {
+        std::cout << "    ...failed! (error_number = " << (int)resp->resp.Flash.error_number << ")" << std::endl;
+        return false;
+      }
+      
+      std::cout << "    ...succeeded!" << std::endl;
+    }
+    
+    for(uint32_t start_offset = 0; start_offset < firmware_bin_len; start_offset += FlashCommand::MAX_LENGTH) {
+      uint32_t length = firmware_bin_len - start_offset;
+      if(length > FlashCommand::MAX_LENGTH) length = FlashCommand::MAX_LENGTH;
+      std::cout << "Flashing is " << (int)100.*start_offset/firmware_bin_len << "% done." << std::endl;
+      
+      Command cmd; memset(&cmd, 0, sizeof(cmd));
+      cmd.dest = dest;
+      cmd.id = dis(gen);
+      cmd.command = CommandID::Flash;
+      cmd.args.Flash.start_offset = start_offset;
+      cmd.args.Flash.length = length;
+      memcpy(cmd.args.Flash.data, firmware_bin + start_offset, length);
+      sender.write_object(cmd);
+      
+      boost::optional<Response> resp = reader.read(cmd.id);
+      if(!resp) {
+        std::cout << "flashing page timed out!" << std::endl;
+        goto unsure_if_talking_to_bootloader;
+      }
+      if(resp->resp.Flash.error_number) {
+        std::cout << "    ...failed! (error_number = " << (int)resp->resp.Flash.error_number << ")" << std::endl;
         return false;
       }
       
@@ -241,10 +263,10 @@ unsure_if_program_correct:
   
   {
     Command cmd; memset(&cmd, 0, sizeof(cmd));
-    cmd.dest = 0x1234;
+    cmd.dest = dest;
     cmd.id = dis(gen);
     cmd.command = CommandID::RunProgram;
-    write_object(cmd, checksumadder);
+    sender.write_object(cmd);
     
     boost::optional<Response> resp = reader.read(cmd.id);
     if(!resp) {

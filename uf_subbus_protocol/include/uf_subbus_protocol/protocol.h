@@ -250,7 +250,7 @@ class SimpleReceiver {
     depacketizer;
 
 public:
-  SimpleReceiver(CallbackType messageReceived) :
+  SimpleReceiver(CallbackType &messageReceived) :
     objectreceiver(messageReceived), cc(objectreceiver), depacketizer(cc) {
   }
   

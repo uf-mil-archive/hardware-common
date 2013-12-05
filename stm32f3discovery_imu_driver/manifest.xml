@@ -8,6 +8,8 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/stm32f3discovery_imu_driver</url>
+  <depend package="sensor_msgs"/>
+
   <depend package="libopencm3"/>
   <depend package="arm_bootloader"/>
   <depend package="uf_subbus_protocol"/>

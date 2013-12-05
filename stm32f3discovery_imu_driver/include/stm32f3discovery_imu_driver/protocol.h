@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include <arm_bootloader/protocol.h>
+
 namespace stm32f3discovery_imu_driver {
 
 
@@ -31,14 +33,17 @@ struct __attribute__((packed)) GetStatusResponse {
 struct __attribute__((packed)) GetIMUDataCommand {
 };
 struct __attribute__((packed)) GetIMUDataResponse {
-  double linear_acceleration[3];
+  uint64_t timestamp; // ns
+  double linear_acceleration[3]; // m/s^2
+  double angular_rate[3]; // rad/s
+  double magnetic_field[3]; // T
 };
 
 
 typedef uint16_t ID;
 
 struct __attribute__((packed)) Command {
-  uint16_t dest;
+  arm_bootloader::Dest dest;
   ID id; // 0 means don't send a response
   CommandID command;
   union {
