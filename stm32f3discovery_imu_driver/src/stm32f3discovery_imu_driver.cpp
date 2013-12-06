@@ -31,6 +31,8 @@ int main(int argc, char **argv) {
   std::string deststr; private_nh.getParam("dest", deststr);
   arm_bootloader::Dest dest = strtol(deststr.c_str(), NULL, 0);
 
+  std::string frame_id; private_nh.getParam("frame_id", frame_id);
+
   if(argc <= 1) {
     if(!arm_bootloader::attempt_bootload(sp, dest, firmware_bin, firmware_bin_len)) {
       std::cout << "bootloading failed" << std::endl;
@@ -66,13 +68,19 @@ int main(int argc, char **argv) {
       continue;
     }
     
+    ros::Time now = ros::Time::now();
+    
     sensor_msgs::Imu msg;
+    msg.header.stamp = now;
+    msg.header.frame_id = frame_id;
     msg.linear_acceleration.x = resp->resp.GetIMUData.linear_acceleration[0];
     msg.linear_acceleration.y = resp->resp.GetIMUData.linear_acceleration[1];
     msg.linear_acceleration.z = resp->resp.GetIMUData.linear_acceleration[2];
     pub.publish(msg);
     
     sensor_msgs::MagneticField msg2;
+    msg2.header.stamp = now;
+    msg2.header.frame_id = frame_id;
     msg2.magnetic_field.x = resp->resp.GetIMUData.magnetic_field[0];
     msg2.magnetic_field.y = resp->resp.GetIMUData.magnetic_field[1];
     msg2.magnetic_field.z = resp->resp.GetIMUData.magnetic_field[2];
