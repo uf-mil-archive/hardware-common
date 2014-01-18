@@ -63,26 +63,24 @@ catkin_package(
 )
 
 include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
-add_custom_target(bootloader ALL
-    WORKING_DIRECTORY ../bootloader
-    COMMAND $(MAKE) BUILD_DIR=../build/bootloader_out TOOLCHAIN_DIR=${libopencm3_PACKAGE_PATH}/build/libopencm3 UF_SUBBUS_PROTOCOL_DIR=${uf_subbus_protocol_PACKAGE_PATH} ARM_BOOTLOADER_DIR=${arm_bootloader_PACKAGE_PATH}
+add_custom_target(stm32f3discovery_imu_driver_bootloader ALL
+    COMMAND $(MAKE) -C ${PROJECT_SOURCE_DIR}/bootloader BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/bootloader_out TOOLCHAIN_DIR=${libopencm3_TOOLCHAIN_DIR} UF_SUBBUS_PROTOCOL_DIR=${uf_subbus_protocol_PACKAGE_PATH} ARM_BOOTLOADER_DIR=${arm_bootloader_PACKAGE_PATH}
 )
-add_dependencies(bootloader ${catkin_EXPORTED_TARGETS})
+add_dependencies(stm32f3discovery_imu_driver_bootloader ${catkin_EXPORTED_TARGETS})
 
 add_custom_command(
-    OUTPUT firmware_out/firmware.bin.dummy
-    WORKING_DIRECTORY ../firmware
-    COMMAND $(MAKE) BUILD_DIR=../build/firmware_out TOOLCHAIN_DIR=${libopencm3_PACKAGE_PATH}/build/libopencm3 UF_SUBBUS_PROTOCOL_DIR=${uf_subbus_protocol_PACKAGE_PATH} ARM_BOOTLOADER_DIR=${arm_bootloader_PACKAGE_PATH}
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/firmware_out/firmware.bin.dummy
+    COMMAND $(MAKE) -C ${PROJECT_SOURCE_DIR}/firmware BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/firmware_out TOOLCHAIN_DIR=${libopencm3_TOOLCHAIN_DIR} UF_SUBBUS_PROTOCOL_DIR=${uf_subbus_protocol_PACKAGE_PATH} ARM_BOOTLOADER_DIR=${arm_bootloader_PACKAGE_PATH}
 )
-add_custom_command(OUTPUT firmware_out/firmware.bin.dummy APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/firmware_out/firmware.bin.dummy APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
 add_custom_command(
-    OUTPUT firmware_bin.cpp
-    DEPENDS firmware_out/firmware.bin.dummy
-    WORKING_DIRECTORY firmware_out
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/firmware_bin.cpp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/firmware_out/firmware.bin.dummy
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/firmware_out
     COMMAND xxd -i firmware.bin > ../firmware_bin.cpp.tmp
     COMMAND cmp -s ../firmware_bin.cpp.tmp ../firmware_bin.cpp || cp ../firmware_bin.cpp.tmp ../firmware_bin.cpp
 )
-add_custom_command(OUTPUT firmware_bin.cpp APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/firmware_bin.cpp APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
@@ -90,7 +88,7 @@ add_custom_command(OUTPUT firmware_bin.cpp APPEND DEPENDS ${catkin_EXPORTED_TARG
 
 # CATKIN_MIGRATION: removed during catkin migration
 # rosbuild_add_boost_directories()
-add_executable(stm32f3discovery_imu_driver src/stm32f3discovery_imu_driver.cpp build/firmware_bin.cpp)
+add_executable(stm32f3discovery_imu_driver src/stm32f3discovery_imu_driver.cpp firmware_bin.cpp)
 target_link_libraries(stm32f3discovery_imu_driver ${catkin_LIBRARIES})
 add_dependencies(stm32f3discovery_imu_driver ${catkin_EXPORTED_TARGETS})
 find_package(Boost REQUIRED COMPONENTS system)

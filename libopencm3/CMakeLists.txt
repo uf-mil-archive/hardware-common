@@ -36,6 +36,21 @@ find_package(catkin REQUIRED )
 #    DEPENDENCIES 
 #)
 
+add_custom_command(
+    OUTPUT libopencm3/.git/HEAD
+    COMMAND git clone https://github.com/libopencm3/libopencm3.git libopencm3
+    COMMAND git --git-dir=libopencm3/.git --work-tree=libopencm3 reset --hard a99f4fb6206598c714ed8576b5e834ee99e79ae3
+)
+add_custom_command(OUTPUT libopencm3/.git/HEAD APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
+
+add_custom_target(libopencm3 ALL
+    DEPENDS libopencm3/.git/HEAD
+    WORKING_DIRECTORY libopencm3
+    COMMAND $(MAKE)
+)
+add_dependencies(libopencm3 ${catkin_EXPORTED_TARGETS})
+set(libopencm3_EXPORTED_TARGETS libopencm3 CACHE INTERNAL "null")
+
 # catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
 # TODO: fill in what other packages will need to use this package
 catkin_package(
@@ -61,16 +76,4 @@ include_directories( ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
-add_custom_command(
-    OUTPUT libopencm3/.git/HEAD
-    COMMAND git clone https://github.com/libopencm3/libopencm3.git libopencm3
-    COMMAND git --git-dir=libopencm3/.git --work-tree=libopencm3 reset --hard a99f4fb6206598c714ed8576b5e834ee99e79ae3
-)
-add_custom_command(OUTPUT libopencm3/.git/HEAD APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
-
-add_custom_target(libopencm3 ALL
-    DEPENDS libopencm3/.git/HEAD
-    WORKING_DIRECTORY libopencm3
-    COMMAND $(MAKE)
-)
-add_dependencies(libopencm3 ${catkin_EXPORTED_TARGETS})
+set(libopencm3_TOOLCHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/libopencm3 CACHE INTERNAL "null")

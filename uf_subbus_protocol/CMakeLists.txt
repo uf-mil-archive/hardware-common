@@ -60,3 +60,5 @@ include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
+
+set(${PROJECT_NAME}_PACKAGE_PATH ${PROJECT_SOURCE_DIR} CACHE INTERNAL "null")

@@ -62,3 +62,5 @@ include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 #target_link_libraries(example ${PROJECT_NAME})
 
 install(PROGRAMS scripts/get_device_id DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+set(${PROJECT_NAME}_PACKAGE_PATH ${PROJECT_SOURCE_DIR} CACHE INTERNAL "null")
