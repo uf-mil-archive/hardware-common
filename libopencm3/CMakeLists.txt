@@ -30,9 +30,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #target_link_libraries(example ${PROJECT_NAME})
 
 add_custom_command(
+    OUTPUT libopencm3/.git/HEAD
     COMMAND git clone https://github.com/libopencm3/libopencm3.git libopencm3
     COMMAND git --git-dir=libopencm3/.git --work-tree=libopencm3 reset --hard a99f4fb6206598c714ed8576b5e834ee99e79ae3
-    OUTPUT libopencm3/.git/HEAD
 )
 
 add_custom_target(libopencm3 ALL

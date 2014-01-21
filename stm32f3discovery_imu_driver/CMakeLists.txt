@@ -31,16 +31,16 @@ add_custom_target(bootloader ALL
 )
 
 add_custom_command(
+    OUTPUT firmware_out/firmware.bin.dummy
     WORKING_DIRECTORY ../firmware
     COMMAND $(MAKE) BUILD_DIR=../build/firmware_out TOOLCHAIN_DIR=${libopencm3_PACKAGE_PATH}/build/libopencm3 UF_SUBBUS_PROTOCOL_DIR=${uf_subbus_protocol_PACKAGE_PATH} ARM_BOOTLOADER_DIR=${arm_bootloader_PACKAGE_PATH}
-    OUTPUT firmware_out/firmware.bin.dummy
 )
 add_custom_command(
+    OUTPUT firmware_bin.cpp
     DEPENDS firmware_out/firmware.bin.dummy
     WORKING_DIRECTORY firmware_out
     COMMAND xxd -i firmware.bin > ../firmware_bin.cpp.tmp
     COMMAND cmp -s ../firmware_bin.cpp.tmp ../firmware_bin.cpp || cp ../firmware_bin.cpp.tmp ../firmware_bin.cpp
-    OUTPUT firmware_bin.cpp
 )
 
 #common commands for building c++ executables and libraries
