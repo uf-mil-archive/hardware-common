@@ -7,4 +7,4 @@ protocol (uf_subbus_protocol), and an example of using both
 This repository depends on the GNU ARM Embedded Toolchain,
 installable with:
 
-    sudo rm /etc/apt/sources.list.d/terry_guo-gcc-arm-embedded-*.list && sudo add-apt-repository -y ppa:terry.guo/gcc-arm-embedded && sudo sed -i -e 's/quantal/precise/g' /etc/apt/sources.list.d/terry_guo-gcc-arm-embedded-*.list && sudo apt-get update && sudo apt-get install gcc-arm-none-eabi
+    sudo rm -f /etc/apt/sources.list.d/terry_guo-gcc-arm-embedded-*.list && sudo add-apt-repository -y ppa:terry.guo/gcc-arm-embedded && sudo sed -i -e 's/quantal/precise/g' /etc/apt/sources.list.d/terry_guo-gcc-arm-embedded-*.list && sudo apt-get update && sudo apt-get install gcc-arm-none-eabi
