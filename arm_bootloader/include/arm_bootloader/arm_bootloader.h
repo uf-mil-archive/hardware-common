@@ -7,6 +7,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/bind.hpp>
+#include <boost/optional.hpp>
+#include <boost/function.hpp>
 
 #include <ros/ros.h>
 
@@ -17,29 +19,50 @@
 namespace arm_bootloader {
 
 
-void write_data(boost::asio::serial_port &sp, uint8_t const *begin, uint8_t const *end) {
+bool write_data(boost::asio::serial_port &sp, uint8_t const *begin, uint8_t const *end) {
   try {
     uint8_t const *pos = begin;
     while(pos != end) {
       pos += sp.write_some(boost::asio::buffer(pos, end - pos));
     }
+    return true;
   } catch(const std::exception &exc) {
     ROS_ERROR("error on write: %s; dropping", exc.what());
+    return false;
   }
 }
 
 class SerialPortSink : public uf_subbus_protocol::ISink {
+  std::string serial_port_filename;
   boost::asio::serial_port &sp;
+  bool had_error;
 public:
-  SerialPortSink(boost::asio::serial_port &sp) :
-    sp(sp) {
+  SerialPortSink(std::string const &serial_port_filename, boost::asio::serial_port &sp) :
+    serial_port_filename(serial_port_filename), sp(sp), had_error(false) {
   }
   void handleStart() {
   }
   void handleByte(uint8_t byte) {
-    write_data(sp, &byte, &byte + 1);
+    while(!write_data(sp, &byte, &byte + 1)) {
+      had_error = true;
+      sp.close();
+      while(true) {
+        try {
+          sp.open(serial_port_filename);
+        } catch(const std::exception &exc) {
+          ROS_ERROR("error on open: %s; retrying", exc.what());
+          usleep(500000);
+          continue;
+        }
+        break;
+      }
+    }
   }
   void handleEnd() {
+  }
+  
+  bool getHadError() {
+    return had_error;
   }
 };
 
@@ -124,17 +147,20 @@ public:
 };
 
 
-bool attempt_bootload(boost::asio::serial_port &sp,
+bool attempt_bootload(std::string serial_port_filename,
+                      boost::asio::serial_port &sp,
                       Dest dest,
                       unsigned char const *firmware_bin,
                       uint32_t firmware_bin_len) {
+  boost::asio::io_service io;
+  
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis(1, 65535);
   
   Reader<Response> reader(sp, 1000);
   
-  SerialPortSink sps(sp);
+  SerialPortSink sps(serial_port_filename, sp);
   uf_subbus_protocol::SimpleSender<Command, uf_subbus_protocol::ISink> sender(sps);
   
 unsure_if_talking_to_bootloader:

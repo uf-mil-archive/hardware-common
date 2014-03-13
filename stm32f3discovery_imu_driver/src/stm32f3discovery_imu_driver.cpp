@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   std::string frame_id; private_nh.getParam("frame_id", frame_id);
 
   if(argc <= 1) {
-    if(!arm_bootloader::attempt_bootload(sp, dest, firmware_bin, firmware_bin_len)) {
+    if(!arm_bootloader::attempt_bootload(port, sp, dest, firmware_bin, firmware_bin_len)) {
       std::cout << "bootloading failed" << std::endl;
       return EXIT_FAILURE;
     }
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   
   arm_bootloader::Reader<Response> reader(sp, 1000);
   
-  arm_bootloader::SerialPortSink sps(sp);
+  arm_bootloader::SerialPortSink sps(port, sp);
   uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink>
     packetizer(sps);
   uf_subbus_protocol::ChecksumAdder<uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink> >
