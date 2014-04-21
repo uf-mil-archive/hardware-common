@@ -76,6 +76,9 @@ int main(int argc, char **argv) {
     msg.linear_acceleration.x = resp->resp.GetIMUData.linear_acceleration[0];
     msg.linear_acceleration.y = resp->resp.GetIMUData.linear_acceleration[1];
     msg.linear_acceleration.z = resp->resp.GetIMUData.linear_acceleration[2];
+    msg.angular_velocity.x = resp->resp.GetIMUData.angular_velocity[0];
+    msg.angular_velocity.y = resp->resp.GetIMUData.angular_velocity[1];
+    msg.angular_velocity.z = resp->resp.GetIMUData.angular_velocity[2];
     pub.publish(msg);
     
     sensor_msgs::MagneticField msg2;

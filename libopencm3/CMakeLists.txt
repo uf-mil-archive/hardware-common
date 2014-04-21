@@ -38,8 +38,9 @@ find_package(catkin REQUIRED )
 
 add_custom_command(
     OUTPUT libopencm3/.git/HEAD
+    COMMAND rm -fr libopencm3
     COMMAND git clone https://github.com/libopencm3/libopencm3.git libopencm3
-    COMMAND git --git-dir=libopencm3/.git --work-tree=libopencm3 reset --hard a99f4fb6206598c714ed8576b5e834ee99e79ae3
+    COMMAND git --git-dir=libopencm3/.git --work-tree=libopencm3 reset --hard 67242de60dec0227739cd549e8a78e1a3c15dbf5
 )
 add_custom_command(OUTPUT libopencm3/.git/HEAD APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
 

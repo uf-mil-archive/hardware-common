@@ -46,7 +46,7 @@ LDFLAGS		+= --static -Wl,-start -lc -lnosys -L$(TOOLCHAIN_DIR)/lib \
 			 -L$(TOOLCHAIN_DIR)/lib/stm32/f3 \
 		   -T$(LDSCRIPT) -nostartfiles -Wl,--gc-sections \
 		   -mthumb -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-OBJS		+= $(BUILD_DIR)/$(BINARY).o $(BUILD_DIR)/i2c.o
+OBJS		+= $(BUILD_DIR)/$(BINARY).o $(BUILD_DIR)/i2c.o $(BUILD_DIR)/spi.o
 
 OOCD		?= openocd
 OOCD_INTERFACE	?= stlink-v2

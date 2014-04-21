@@ -1,5 +1,5 @@
-#include <libopencm3/stm32/f3/i2c.h>
-#include <libopencm3/stm32/f3/rcc.h>
+#include <libopencm3/stm32/i2c.h>
+#include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 
 #include <stm32f3discovery_imu_driver/protocol.h>

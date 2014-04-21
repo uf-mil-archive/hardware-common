@@ -35,7 +35,7 @@ struct __attribute__((packed)) GetIMUDataCommand {
 struct __attribute__((packed)) GetIMUDataResponse {
   uint64_t timestamp; // ns
   double linear_acceleration[3]; // m/s^2
-  double angular_rate[3]; // rad/s
+  double angular_velocity[3]; // rad/s
   double magnetic_field[3]; // T
 };
 
@@ -55,6 +55,7 @@ struct __attribute__((packed)) Command {
 
 struct __attribute__((packed)) Response {
   ID id;
+  uint16_t _padding; // needed to ensure 32-bit alignment
   union {
     ResetResponse Reset;
     GetStatusResponse GetStatus;

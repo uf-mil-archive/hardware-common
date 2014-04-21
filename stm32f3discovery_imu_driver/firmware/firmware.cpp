@@ -12,6 +12,7 @@
 #include <stm32f3discovery_imu_driver/protocol.h>
 
 #include "i2c.h"
+#include "spi.h"
 
 using namespace stm32f3discovery_imu_driver;
 
@@ -60,6 +61,7 @@ public:
       
       case CommandID::GetIMUData: {
         i2c_read_imu(resp.resp.GetIMUData);
+        spi_read_gyro(resp.resp.GetIMUData.angular_velocity);
       } break;
 
       default: {
@@ -136,6 +138,7 @@ int main() {
   gpio_set_af(GPIOA, GPIO_AF14, GPIO11| GPIO12);
   
   i2c_setup();
+  spi_setup();
 
   arm_bootloader::Dest dest = arm_bootloader::get_unique_dest();
 

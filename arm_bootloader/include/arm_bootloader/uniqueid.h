@@ -1,6 +1,8 @@
 #ifndef GUARD_QUARTZXBGSRPXCAU
 #define GUARD_QUARTZXBGSRPXCAU
 
+#include <libopencm3/stm32/memorymap.h>
+
 #include <uf_subbus_protocol/sha256.h>
 
 #include <arm_bootloader/protocol.h>
