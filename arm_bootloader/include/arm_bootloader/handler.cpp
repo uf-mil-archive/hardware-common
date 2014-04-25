@@ -19,7 +19,7 @@ static uint8_t *client_flash_end = reinterpret_cast<uint8_t*>(&_end_client_rom);
 
 __attribute__((warn_unused_result))
 static bool flash_erase(void *dest) {
-  if(reinterpret_cast<uint32_t>(dest) % 2048) while(true);
+  //assert(reinterpret_cast<uint32_t>(dest) % page_size == 0);
   
   FLASH_CR &= ~static_cast<uint32_t>(FLASH_CR_PG); // stlink programmer seems to leave PG set
   FLASH_CR |= FLASH_CR_PER;
@@ -65,10 +65,11 @@ class Handler {
   uf_subbus_protocol::SimpleReceiver<Command, GotMessageFunctor> receiver;
   uf_subbus_protocol::SimpleSender<Response, uf_subbus_protocol::ISink> sender;
   Dest dest;
+  uint32_t page_size;
 
 public:
-  Handler(uf_subbus_protocol::ISink &sink, Dest dest) :
-    gmf(*this), receiver(gmf), sender(sink), dest(dest) {
+  Handler(uf_subbus_protocol::ISink &sink, Dest dest, uint32_t page_size) :
+    gmf(*this), receiver(gmf), sender(sink), dest(dest), page_size(page_size) {
   }
   
   void handleByte(uint8_t byte) {
@@ -119,7 +120,7 @@ public:
             failed = true;
             break;
           }
-          to_erase += 2048;
+          to_erase += page_size;
         }
         
         flash_lock();

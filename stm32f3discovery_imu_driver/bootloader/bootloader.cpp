@@ -86,7 +86,8 @@ int main() {
 
   arm_bootloader::Handler handler(
     sink,
-    dest);
+    dest,
+    2048);
   handlerp = &handler;
 
   while (1)
