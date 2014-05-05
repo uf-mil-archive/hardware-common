@@ -107,6 +107,29 @@ catkin_package(
 #   ${catkin_LIBRARIES}
 # )
 
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stlink/.git/HEAD
+    COMMAND rm -fr ${CMAKE_CURRENT_BINARY_DIR}/stlink
+    COMMAND git clone git@github.com:texane/stlink.git ${CMAKE_CURRENT_BINARY_DIR}/stlink
+    COMMAND git --git-dir=${CMAKE_CURRENT_BINARY_DIR}/stlink/.git --work-tree=${CMAKE_CURRENT_BINARY_DIR}/stlink reset --hard 8f96d26a522d870a50f7cb58a7e4a709dcb0dac6
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stlink/Makefile
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stlink/.git/HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/stlink
+    COMMAND ./autogen.sh
+    COMMAND ./configure
+)
+
+add_custom_target(stlink ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stlink/Makefile
+    COMMAND $(MAKE) -C ${CMAKE_CURRENT_BINARY_DIR}/stlink
+    COMMAND mkdir -p ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/stlink/st-flash ${CMAKE_CURRENT_BINARY_DIR}/stlink/st-info ${CMAKE_CURRENT_BINARY_DIR}/stlink/st-term ${CMAKE_CURRENT_BINARY_DIR}/stlink/st-util ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+)
+
 #############
 ## Install ##
 #############
