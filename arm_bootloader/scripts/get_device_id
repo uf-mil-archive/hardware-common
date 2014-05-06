@@ -9,7 +9,7 @@ import tempfile
 tmpdir = tempfile.mkdtemp()
 output_filename = os.path.join(tmpdir, 'flash')
 
-subprocess.check_call(['st-flash', 'read', output_filename, '1FFFF7AC', 'C'])
+subprocess.check_call(['rosrun', 'stlink', 'st-flash', 'read', output_filename, '1FFFF7AC', 'C'])
 
 with open(output_filename, 'rb') as f:
     data = f.read()
