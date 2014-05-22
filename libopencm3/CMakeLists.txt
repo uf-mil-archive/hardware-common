@@ -37,8 +37,9 @@ find_package(catkin REQUIRED )
 #)
 
 add_custom_target(libopencm3 ALL
-    COMMAND cp -a ${PROJECT_SOURCE_DIR}/data/libopencm3 ${CMAKE_CURRENT_BINARY_DIR}/libopencm3_build
-    COMMAND $(MAKE) -C ${CMAKE_CURRENT_BINARY_DIR}/libopencm3_build
+    mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/libopencm3
+    COMMAND cp -a ${PROJECT_SOURCE_DIR}/data/libopencm3/* ${CMAKE_CURRENT_BINARY_DIR}/libopencm3/
+    COMMAND $(MAKE) -C ${CMAKE_CURRENT_BINARY_DIR}/libopencm3
 )
 add_dependencies(libopencm3 ${catkin_EXPORTED_TARGETS})
 set(libopencm3_EXPORTED_TARGETS libopencm3 CACHE INTERNAL "null")
@@ -68,4 +69,4 @@ include_directories( ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
-set(libopencm3_TOOLCHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/libopencm3_build CACHE INTERNAL "null")
+set(libopencm3_TOOLCHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/libopencm3 CACHE INTERNAL "null")
