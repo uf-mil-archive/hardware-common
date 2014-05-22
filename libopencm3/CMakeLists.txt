@@ -36,18 +36,9 @@ find_package(catkin REQUIRED )
 #    DEPENDENCIES 
 #)
 
-add_custom_command(
-    OUTPUT libopencm3/.git/HEAD
-    COMMAND rm -fr libopencm3
-    COMMAND git clone https://github.com/libopencm3/libopencm3.git libopencm3
-    COMMAND git --git-dir=libopencm3/.git --work-tree=libopencm3 reset --hard 67242de60dec0227739cd549e8a78e1a3c15dbf5
-)
-add_custom_command(OUTPUT libopencm3/.git/HEAD APPEND DEPENDS ${catkin_EXPORTED_TARGETS})
-
 add_custom_target(libopencm3 ALL
-    DEPENDS libopencm3/.git/HEAD
-    WORKING_DIRECTORY libopencm3
-    COMMAND $(MAKE)
+    COMMAND cp -a ${PROJECT_SOURCE_DIR}/data/libopencm3 ${CMAKE_CURRENT_BINARY_DIR}/libopencm3_build
+    COMMAND $(MAKE) -C ${CMAKE_CURRENT_BINARY_DIR}/libopencm3_build
 )
 add_dependencies(libopencm3 ${catkin_EXPORTED_TARGETS})
 set(libopencm3_EXPORTED_TARGETS libopencm3 CACHE INTERNAL "null")
@@ -77,4 +68,4 @@ include_directories( ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
-set(libopencm3_TOOLCHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/libopencm3 CACHE INTERNAL "null")
+set(libopencm3_TOOLCHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/libopencm3_build CACHE INTERNAL "null")
