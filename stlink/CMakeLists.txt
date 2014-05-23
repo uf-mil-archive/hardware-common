@@ -109,15 +109,14 @@ catkin_package(
 
 
 add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stlink/.git/HEAD
-    COMMAND rm -fr ${CMAKE_CURRENT_BINARY_DIR}/stlink
-    COMMAND git clone git@github.com:texane/stlink.git ${CMAKE_CURRENT_BINARY_DIR}/stlink
-    COMMAND git --git-dir=${CMAKE_CURRENT_BINARY_DIR}/stlink/.git --work-tree=${CMAKE_CURRENT_BINARY_DIR}/stlink reset --hard 8f96d26a522d870a50f7cb58a7e4a709dcb0dac6
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stlink/autogen.sh
+    COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/stlink
+    COMMAND cp -a ${PROJECT_SOURCE_DIR}/data/stlink/* ${CMAKE_CURRENT_BINARY_DIR}/stlink/
 )
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stlink/Makefile
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stlink/.git/HEAD
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stlink/autogen.sh
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/stlink
     COMMAND ./autogen.sh
     COMMAND ./configure

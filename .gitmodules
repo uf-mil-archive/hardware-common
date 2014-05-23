@@ -1,3 +1,6 @@
 [submodule "libopencm3/data/libopencm3"]
 	path = libopencm3/data/libopencm3
 	url = https://github.com/libopencm3/libopencm3.git
+[submodule "stlink/data/stlink"]
+	path = stlink/data/stlink
+	url = https://github.com/texane/stlink.git
