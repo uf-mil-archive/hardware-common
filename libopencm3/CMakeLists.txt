@@ -37,7 +37,7 @@ find_package(catkin REQUIRED )
 #)
 
 add_custom_target(libopencm3 ALL
-    mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/libopencm3
+    COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/libopencm3
     COMMAND cp -a ${PROJECT_SOURCE_DIR}/data/libopencm3/* ${CMAKE_CURRENT_BINARY_DIR}/libopencm3/
     COMMAND $(MAKE) -C ${CMAKE_CURRENT_BINARY_DIR}/libopencm3
 )
