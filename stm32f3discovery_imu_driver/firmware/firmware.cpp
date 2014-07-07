@@ -13,6 +13,7 @@
 
 #include "i2c.h"
 #include "spi.h"
+#include "pwm.h"
 
 using namespace stm32f3discovery_imu_driver;
 
@@ -62,6 +63,11 @@ public:
       case CommandID::GetIMUData: {
         i2c_read_imu(resp.resp.GetIMUData);
         spi_read_gyro(resp.resp.GetIMUData.angular_velocity);
+      } break;
+      
+      case CommandID::SetPWM: {
+        pwm_set_length(0, msg.args.SetPWM.length[0]);
+        pwm_set_length(1, msg.args.SetPWM.length[1]);
       } break;
 
       default: {
@@ -139,6 +145,7 @@ int main() {
   
   i2c_setup();
   spi_setup();
+  pwm_setup();
 
   arm_bootloader::Dest dest = arm_bootloader::get_unique_dest();
 

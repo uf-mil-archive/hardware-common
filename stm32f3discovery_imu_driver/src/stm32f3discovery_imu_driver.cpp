@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
+#include <std_msgs/Float64.h>
 
 #include <arm_bootloader/arm_bootloader.h>
 
@@ -54,6 +55,13 @@ int main(int argc, char **argv) {
   
   ros::Publisher pub = nh.advertise<sensor_msgs::Imu>("/imu/data_raw", 10);
   ros::Publisher pub2 = nh.advertise<sensor_msgs::MagneticField>("/imu/mag_raw", 10);
+  double pwm1 = 0, pwm2 = 0;
+  ros::Subscriber sub1 = private_nh.subscribe<std_msgs::Float64>("pwm1", 10, [&pwm1](std_msgs::Float64ConstPtr msg) {
+    pwm1 = msg->data;
+  });
+  ros::Subscriber sub2 = private_nh.subscribe<std_msgs::Float64>("pwm2", 10, [&pwm2](std_msgs::Float64ConstPtr msg) {
+    pwm2 = msg->data;
+  });
   
   while(ros::ok()) {
     Command cmd; memset(&cmd, 0, sizeof(cmd));
@@ -88,6 +96,22 @@ int main(int argc, char **argv) {
     msg2.magnetic_field.y = resp->resp.GetIMUData.magnetic_field[1];
     msg2.magnetic_field.z = resp->resp.GetIMUData.magnetic_field[2];
     pub2.publish(msg2);
+    
+    {
+      Command cmd; memset(&cmd, 0, sizeof(cmd));
+      cmd.dest = dest;
+      cmd.id = dis(gen);
+      cmd.command = CommandID::SetPWM;
+      cmd.args.SetPWM.length[0] = pwm1;
+      cmd.args.SetPWM.length[1] = pwm2;
+      write_object(cmd, checksumadder);
+      
+      boost::optional<Response> resp = reader.read(cmd.id);
+      if(!resp) {
+        std::cout << "timeout receiving pwm packet!" << std::endl;
+        continue;
+      }
+    }
   }
   
   ros::waitForShutdown();

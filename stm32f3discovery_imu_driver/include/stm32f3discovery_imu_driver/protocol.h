@@ -15,6 +15,7 @@ enum class CommandID : uint16_t {
   
   // commands specific to this firmware
   GetIMUData = 0x6393,
+  SetPWM,
 };
 
 
@@ -40,6 +41,13 @@ struct __attribute__((packed)) GetIMUDataResponse {
 };
 
 
+struct __attribute__((packed)) SetPWMCommand {
+  float length[2];
+};
+struct __attribute__((packed)) SetPWMResponse {
+};
+
+
 typedef uint16_t ID;
 
 struct __attribute__((packed)) Command {
@@ -50,6 +58,7 @@ struct __attribute__((packed)) Command {
     ResetCommand Reset;
     GetStatusCommand GetStatus;
     GetIMUDataCommand GetIMUData;
+    SetPWMCommand SetPWM;
   } args;
 };
 
@@ -60,6 +69,7 @@ struct __attribute__((packed)) Response {
     ResetResponse Reset;
     GetStatusResponse GetStatus;
     GetIMUDataResponse GetIMUData;
+    SetPWMResponse SetPWM;
   } resp;
 };
 
