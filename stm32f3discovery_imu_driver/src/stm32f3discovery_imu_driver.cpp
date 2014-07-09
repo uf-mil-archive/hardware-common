@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
   
   ros::Publisher pub = nh.advertise<sensor_msgs::Imu>("/imu/data_raw", 10);
   ros::Publisher pub2 = nh.advertise<sensor_msgs::MagneticField>("/imu/mag_raw", 10);
-  double pwm1 = 0, pwm2 = 0;
+  double pwm1 = 1.5e-3, pwm2 = 1.5e-3;
   ros::Subscriber sub1 = private_nh.subscribe<std_msgs::Float64>("pwm1", 10, [&pwm1](std_msgs::Float64ConstPtr msg) {
     pwm1 = msg->data;
   });
