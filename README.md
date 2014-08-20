@@ -7,7 +7,7 @@ protocol (uf_subbus_protocol), and an example of using both
 This repository depends on the GNU ARM Embedded Toolchain,
 installable with:
 
-    sudo bash -c "echo -e 'Package: *\nPin: origin "ppa.launchpad.net"\nPin-Priority: 999' > /etc/apt/preferences.d/arm" && sudo rm -f /etc/apt/sources.list.d/terry_guo-gcc-arm-embedded-*.list && sudo add-apt-repository -y ppa:terry.guo/gcc-arm-embedded && sudo apt-get update && sudo apt-get install gcc-arm-none-eabi
+    sudo mkdir -p /etc/apt/preferences.d/ && sudo bash -c "echo -e 'Package: *\nPin: origin "ppa.launchpad.net"\nPin-Priority: 999' > /etc/apt/preferences.d/arm" && sudo rm -f /etc/apt/sources.list.d/terry_guo-gcc-arm-embedded-*.list && sudo add-apt-repository -y ppa:terry.guo/gcc-arm-embedded && sudo apt-get update && sudo apt-get remove -y gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libnewlib-dev && sudo apt-get install -y gcc-arm-none-eabi
 
 This package also depends on autoconf, automake, and
 libtool:
