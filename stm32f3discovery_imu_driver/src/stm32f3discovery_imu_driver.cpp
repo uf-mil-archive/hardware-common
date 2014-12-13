@@ -15,7 +15,7 @@ extern int firmware_bin_len;
 using namespace stm32f3discovery_imu_driver;
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "stm32f3_discovery_imu_driver");
+  ros::init(argc, argv, "stm32f3discovery_imu_driver");
   
   ros::NodeHandle private_nh("~");
   ros::NodeHandle nh;
