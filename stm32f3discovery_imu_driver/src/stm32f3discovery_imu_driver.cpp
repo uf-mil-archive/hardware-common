@@ -88,7 +88,7 @@ private:	// Vars
 
 private:	// Functions
 	void writePwms_();
-	void setPwm_(double &pwm, std_msgs::Float64ConstPtr msg);
+	void setPwm_(double *pwm, std_msgs::Float64ConstPtr msg);
 	void onShutdown_();
 	void xmlrpcShutdown_(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result);
 	void sigintShutdown_(int sig);
@@ -126,11 +126,13 @@ interface::interface(int argc, char **argv):
 
 	// Setup IO
 	std::string port; private_nh.getParam("port", port);
+	//ROS_INFO(port.c_str());
 	sp_.open(port);
 	sp_.set_option(boost::asio::serial_port::baud_rate(115200));
 
 	std::string deststr; private_nh.getParam("dest", deststr);
 	dest_ = strtol(deststr.c_str(), NULL, 0);
+	//ROS_INFO(deststr.c_str());
 
 	// Get the frame id
 	private_nh.getParam("frame_id", frame_id_);
@@ -143,52 +145,64 @@ interface::interface(int argc, char **argv):
 			return;
 		}
 	}
+	//ROS_INFO("1");
 
 	// Generate random number
 	std::random_device rd;
 	gen_ = std::mt19937(rd());
 	dis_ = std::uniform_int_distribution<>(1, 65535);
+	//ROS_INFO("2");
 
 	// Make a reader
 	reader_ = boost::shared_ptr<arm_bootloader::Reader<Response> >
 		(new arm_bootloader::Reader<Response>(sp_, 1000));
+	//ROS_INFO("3");
 
 	// Setup protocol
 	sps_ = boost::shared_ptr<arm_bootloader::SerialPortSink>
 			(new arm_bootloader::SerialPortSink(port, sp_));
+	//ROS_INFO("4");
 	packetizer_ = boost::shared_ptr<packet> (new packet(*sps_));
+	//ROS_INFO("5");
 	checksumadder_ = boost::shared_ptr<checksum>
 			(new checksum(*packetizer_));
+	//ROS_INFO("6");
 
 	// Set up publishers and subscribers
 	imu_pub_ = nh.advertise<sensor_msgs::Imu>("/imu/data_raw", 10);
 	mag_pub_ = nh.advertise<sensor_msgs::MagneticField>("/imu/mag_raw", 10);
 
 	pwm1_sub_ = private_nh.subscribe<std_msgs::Float64>("pwm1", 10,
-			boost::bind(&interface::setPwm_, this, pwm1_, _1) );
+			boost::bind(&interface::setPwm_, this, &pwm1_, _1) );
 	pwm2_sub_ = private_nh.subscribe<std_msgs::Float64>("pwm2", 10,
-			boost::bind(&interface::setPwm_, this, pwm2_, _1) );
+			boost::bind(&interface::setPwm_, this, &pwm2_, _1) );
+	//ROS_INFO("7");
 }
 
-void interface::setPwm_(double &pwm, std_msgs::Float64ConstPtr msg)
+void interface::setPwm_(double *pwm, std_msgs::Float64ConstPtr msg)
 {
-	pwm = msg->data;
+	//ROS_INFO("Pwm: %f", msg->data);
+	(*pwm) = msg->data;
 }
 
 void interface::writePwms_()
 {
+	//ROS_INFO("wp 1");
 	Command cmd; memset(&cmd, 0, sizeof(cmd));
 	cmd.dest = dest_;
 	cmd.id = dis_(gen_);
 	cmd.command = CommandID::SetPWM;
 	cmd.args.SetPWM.length[0] = pwm1_;
 	cmd.args.SetPWM.length[1] = pwm2_;
+	//ROS_INFO("wp 2");
 	write_object(cmd, (*checksumadder_));
+	//ROS_INFO("wp 3");
 
 	boost::optional<Response> resp = reader_->read(cmd.id);
 	if(!resp) {
 		ROS_WARN("Timeout receiving pwm packet");
 	}
+	//ROS_INFO("wp 4");
 }
 
 void interface::onShutdown_()
@@ -210,6 +224,7 @@ void interface::onShutdown_()
 
 void interface::sigintShutdown_(int sig)
 {
+	//ROS_INFO("Ctrl+c");
 	onShutdown_();
 }
 
@@ -235,17 +250,21 @@ void interface::xmlrpcShutdown_(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue
 void interface::run_()
 {
 	while(ros::ok()) {
+		//ROS_INFO("Loop 1");
 		Command cmd; memset(&cmd, 0, sizeof(cmd));
 		cmd.dest = dest_;
 		cmd.id = dis_(gen_);
 		cmd.command = CommandID::GetIMUData;
+		//ROS_INFO("Loop 2");
 		write_object(cmd, (*checksumadder_));
+		//ROS_INFO("Loop 3");
 
 		boost::optional<Response> resp = reader_->read(cmd.id);
 		if(!resp) {
 			ROS_WARN("Timeout receiving imu packet!");
 			continue;
 		}
+		//ROS_INFO("Loop 4");
 
 		ros::Time now = ros::Time::now();
 
@@ -269,6 +288,8 @@ void interface::run_()
 		mag_pub_.publish(msg2);
 
 		writePwms_();
+
+		ros::spinOnce();
 	}
 }
 
@@ -278,6 +299,5 @@ int main(int argc, char **argv)
 
 	node.run_();
 
-	ros::waitForShutdown();
 	return EXIT_SUCCESS;
 }
