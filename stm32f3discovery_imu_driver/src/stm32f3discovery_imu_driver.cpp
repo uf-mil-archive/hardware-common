@@ -53,18 +53,27 @@ typename Func<typename Functor::result_type>::type get_wrapper(Functor f)
 
 class interface
 {
+private:	// Typedefs
+	typedef uf_subbus_protocol::ChecksumAdder<uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink> > checksum;
+	typedef uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink> packet;
+
 private:	// Vars
+	// IO
+	boost::asio::io_service io_svr_;
+	boost::asio::serial_port sp_;
+
 	// Random num gen
 	std::mt19937 gen_;
 	std::uniform_int_distribution<> dis_;
+	boost::shared_ptr<arm_bootloader::SerialPortSink> sps_;
 
 	// Bootloader
 	arm_bootloader::Dest dest_;
 	boost::shared_ptr<arm_bootloader::Reader<Response>> reader_;
 
 	// Protocol
-	boost::shared_ptr<uf_subbus_protocol::ChecksumAdder<uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink> >>
-			checksumadder_;
+	boost::shared_ptr<packet> packetizer_;
+	boost::shared_ptr<checksum> checksumadder_;
 
 	// Pwms
 	double pwm1_, pwm2_;
@@ -90,7 +99,8 @@ public: 	// Functions
 
 };
 
-interface::interface(int argc, char **argv)
+interface::interface(int argc, char **argv):
+		io_svr_(), sp_(io_svr_)
 {
 	// Initialize ROS with an asynchronism spinner
 	ros::init(argc, argv, "stm32f3discovery_imu_driver", ros::init_options::NoSigintHandler);
@@ -109,16 +119,15 @@ interface::interface(int argc, char **argv)
 	boost::function<void (int)> boost_f = boost::bind(&interface::sigintShutdown_, this, _1);
 	void (*c_f)(int) = get_wrapper<1>(boost_f);
 	signal(SIGINT, c_f);		// ctr-c (or any other SIGINT producer)
+
 	ros::XMLRPCManager::instance()->unbind("shutdown");				// rosnode kill cmd line tool
 	boost::function<void(XmlRpc::XmlRpcValue&, XmlRpc::XmlRpcValue&)> f = boost::bind(&interface::xmlrpcShutdown_, this, _1, _2);
 	ros::XMLRPCManager::instance()->bind("shutdown", f);
 
 	// Setup IO
-	boost::asio::io_service io;
-	boost::asio::serial_port sp(io);
 	std::string port; private_nh.getParam("port", port);
-	sp.open(port);
-	sp.set_option(boost::asio::serial_port::baud_rate(115200));
+	sp_.open(port);
+	sp_.set_option(boost::asio::serial_port::baud_rate(115200));
 
 	std::string deststr; private_nh.getParam("dest", deststr);
 	dest_ = strtol(deststr.c_str(), NULL, 0);
@@ -128,7 +137,7 @@ interface::interface(int argc, char **argv)
 
 	// Run the bootloader
 	if(argc <= 1) {
-		if(!arm_bootloader::attempt_bootload(port, sp, dest_, firmware_bin, firmware_bin_len)) {
+		if(!arm_bootloader::attempt_bootload(port, sp_, dest_, firmware_bin, firmware_bin_len)) {
 			ROS_ERROR("bootloading failed");
 			ros::shutdown();
 			return;
@@ -142,15 +151,14 @@ interface::interface(int argc, char **argv)
 
 	// Make a reader
 	reader_ = boost::shared_ptr<arm_bootloader::Reader<Response> >
-		(new arm_bootloader::Reader<Response>(sp, 1000));
+		(new arm_bootloader::Reader<Response>(sp_, 1000));
 
 	// Setup protocol
-	arm_bootloader::SerialPortSink sps(port, sp);
-	uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink>
-		packetizer(sps);
-	checksumadder_ =
-			boost::shared_ptr<uf_subbus_protocol::ChecksumAdder<uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink> >>
-			(new uf_subbus_protocol::ChecksumAdder<uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink> >(packetizer));
+	sps_ = boost::shared_ptr<arm_bootloader::SerialPortSink>
+			(new arm_bootloader::SerialPortSink(port, sp_));
+	packetizer_ = boost::shared_ptr<packet> (new packet(*sps_));
+	checksumadder_ = boost::shared_ptr<checksum>
+			(new checksum(*packetizer_));
 
 	// Set up publishers and subscribers
 	imu_pub_ = nh.advertise<sensor_msgs::Imu>("/imu/data_raw", 10);
