@@ -118,7 +118,7 @@ interface::interface(int argc, char **argv):
 		killed_(true)
 {
 	// Initialize ROS with an asynchronism spinner
-	ros::init(argc, argv, "stm32f3discovery_imu_driver", ros::init_options::NoSigintHandler);
+	
 	ros::NodeHandle private_nh("~");
 	ros::NodeHandle nh;
 	ros::AsyncSpinner spinner(4); // Use 4 threads
@@ -320,6 +320,8 @@ void interface::run_()
 
 int main(int argc, char **argv)
 {
+	ros::init(argc, argv, "stm32f3discovery_imu_driver", ros::init_options::NoSigintHandler);
+
 	interface node(argc, argv);
 
 	node.run_();
