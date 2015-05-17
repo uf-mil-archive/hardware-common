@@ -11,6 +11,7 @@
 #include <boost/foreach.hpp>
 
 #include <kill_handling/listener.h>
+#include <kill_handling/broadcaster.h>
 #include <arm_bootloader/arm_bootloader.h>
 #include <stm32f3discovery_imu_driver/protocol.h>
 
@@ -94,6 +95,7 @@ private:	// Vars
 
 	// Kill
 	kill_handling::KillListener kill_listener_;
+	kill_handling::KillBroadcaster kill_broacaster_;
 	bool killed_;
 
 private:	// Functions
@@ -115,6 +117,7 @@ public: 	// Functions
 interface::interface(int argc, char **argv):
 		io_svr_(), sp_(io_svr_),
 		kill_listener_(boost::bind(&interface::onKill_, this), boost::bind(&interface::onUnkill_, this)),
+		kill_broacaster_("stm32f3discovery_imu_driver", "Killed stm32f3discovery_imu_driver"),
 		killed_(true)
 {
 	// Initialize ROS with an asynchronism spinner
@@ -183,6 +186,9 @@ interface::interface(int argc, char **argv):
 			boost::bind(&interface::setPwm_, this, &pwm1_, _1) );
 	pwm2_sub_ = private_nh.subscribe<std_msgs::Float64>("pwm2", 10,
 			boost::bind(&interface::setPwm_, this, &pwm2_, _1) );
+
+	// Clear the kill in case this node previously sent a kill
+	kill_broacaster_.clear();
 }
 
 void interface::onKill_()
@@ -247,6 +253,9 @@ void interface::onShutdown_()
 
 	// Write the zeros
 	writePwms_();
+
+	// Send out a kill msgs
+	kill_broacaster_.send(true);
 
 	// Shutdown ros
 	ros::shutdown();
