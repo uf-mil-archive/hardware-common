@@ -7,9 +7,11 @@
 #include <ros/xmlrpc_manager.h>
 
 #include <signal.h>
+#include <string>
+#include <boost/foreach.hpp>
 
+#include <kill_handling/listener.h>
 #include <arm_bootloader/arm_bootloader.h>
-
 #include <stm32f3discovery_imu_driver/protocol.h>
 
 extern unsigned char firmware_bin[];
@@ -58,6 +60,10 @@ private:	// Typedefs
 	typedef uf_subbus_protocol::Packetizer<arm_bootloader::SerialPortSink> packet;
 
 private:	// Vars
+	// Note:
+	//			In the case that a class does not have a constructor that is convinent to use
+	//			in the initializer list of this class constructor a pointer was used instead.
+
 	// IO
 	boost::asio::io_service io_svr_;
 	boost::asio::serial_port sp_;
@@ -86,12 +92,19 @@ private:	// Vars
 	// TF
 	std::string frame_id_;
 
+	// Kill
+	kill_handling::KillListener kill_listener_;
+	bool killed_;
+
 private:	// Functions
 	void writePwms_();
 	void setPwm_(double *pwm, std_msgs::Float64ConstPtr msg);
 	void onShutdown_();
 	void xmlrpcShutdown_(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result);
 	void sigintShutdown_(int sig);
+
+	void onKill_();
+	void onUnkill_();
 
 public: 	// Functions
 	interface(int argc, char **argv);
@@ -100,7 +113,9 @@ public: 	// Functions
 };
 
 interface::interface(int argc, char **argv):
-		io_svr_(), sp_(io_svr_)
+		io_svr_(), sp_(io_svr_),
+		kill_listener_(boost::bind(&interface::onKill_, this), boost::bind(&interface::onUnkill_, this)),
+		killed_(true)
 {
 	// Initialize ROS with an asynchronism spinner
 	ros::init(argc, argv, "stm32f3discovery_imu_driver", ros::init_options::NoSigintHandler);
@@ -170,6 +185,27 @@ interface::interface(int argc, char **argv):
 			boost::bind(&interface::setPwm_, this, &pwm2_, _1) );
 }
 
+void interface::onKill_()
+{
+	killed_ = true;
+
+	std::string res;
+	std::vector<std::string> reasons = kill_listener_.get_kills();
+
+	BOOST_FOREACH(std::string str, reasons)
+	{
+		res += str;
+	}
+
+	ROS_WARN("PWM generation killed because: %s", res.c_str());
+}
+
+void interface::onUnkill_()
+{
+	ROS_WARN("PWM generation started");
+	killed_ = false;
+}
+
 void interface::setPwm_(double *pwm, std_msgs::Float64ConstPtr msg)
 {
 	(*pwm) = msg->data;
@@ -181,8 +217,16 @@ void interface::writePwms_()
 	cmd.dest = dest_;
 	cmd.id = dis_(gen_);
 	cmd.command = CommandID::SetPWM;
-	cmd.args.SetPWM.length[0] = pwm1_;
-	cmd.args.SetPWM.length[1] = pwm2_;
+	if(!killed_)
+	{
+		cmd.args.SetPWM.length[0] = pwm1_;
+		cmd.args.SetPWM.length[1] = pwm2_;
+	}
+	else
+	{
+		cmd.args.SetPWM.length[0] = zero_pwm_;
+		cmd.args.SetPWM.length[1] = zero_pwm_;
+	}
 	write_object(cmd, (*checksumadder_));
 
 	boost::optional<Response> resp = reader_->read(cmd.id);

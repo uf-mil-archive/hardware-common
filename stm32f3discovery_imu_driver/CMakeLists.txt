@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(stm32f3discovery_imu_driver)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS sensor_msgs arm_bootloader libopencm3 uf_subbus_protocol)
+find_package(catkin REQUIRED COMPONENTS sensor_msgs arm_bootloader libopencm3 uf_subbus_protocol kill_handling message_generation)
 # CATKIN_MIGRATION: removed during catkin migration
 # cmake_minimum_required(VERSION 2.4.6)
 
@@ -57,7 +57,7 @@ find_package(catkin REQUIRED COMPONENTS sensor_msgs arm_bootloader libopencm3 uf
 # TODO: fill in what other packages will need to use this package
 catkin_package(
     DEPENDS  # TODO
-    CATKIN_DEPENDS sensor_msgs arm_bootloader libopencm3 uf_subbus_protocol
+    CATKIN_DEPENDS sensor_msgs arm_bootloader libopencm3 uf_subbus_protocol kill_handling message_runtime
     INCLUDE_DIRS include# TODO include
     LIBRARIES # TODO
 )
@@ -91,6 +91,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/firmware_bin.cpp APPEND DE
 add_executable(stm32f3discovery_imu_driver src/stm32f3discovery_imu_driver.cpp firmware_bin.cpp)
 target_link_libraries(stm32f3discovery_imu_driver ${catkin_LIBRARIES})
 add_dependencies(stm32f3discovery_imu_driver ${catkin_EXPORTED_TARGETS})
+add_dependencies(stm32f3discovery_imu_driver kill_handling_generate_messages_cpp)
 find_package(Boost REQUIRED COMPONENTS system)
 include_directories(${Boost_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
