@@ -243,6 +243,10 @@ void interface::writePwms_()
 
 void interface::onShutdown_()
 {
+
+	// Send out a kill msgs
+	kill_broadcaster_.send(true);
+
 	// Stop both subscribers in case somehow a msg comes between setting pwms to zero and the write pwm cmd
 	pwm1_sub_.shutdown();
 	pwm2_sub_.shutdown();
@@ -254,8 +258,6 @@ void interface::onShutdown_()
 	// Write the zeros
 	writePwms_();
 
-	// Send out a kill msgs
-	kill_broadcaster_.send(true);
 
 	// Shutdown ros
 	ros::shutdown();
