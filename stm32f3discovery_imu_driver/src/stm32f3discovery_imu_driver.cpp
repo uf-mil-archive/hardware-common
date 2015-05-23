@@ -118,7 +118,7 @@ interface::interface(int argc, char **argv):
 		io_svr_(), sp_(io_svr_),
 		kill_listener_(boost::bind(&interface::onKill_, this), boost::bind(&interface::onUnkill_, this)),
 		kill_broadcaster_("stm32f3discovery_imu_driver", "Killed stm32f3discovery_imu_driver"),
-		killed_(true)
+		killed_(false)
 {
 	// Initialize ROS with an asynchronism spinner
 	
